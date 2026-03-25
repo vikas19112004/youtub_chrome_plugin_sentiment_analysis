@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Sentiment Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container" id="container">
+        <div class="appHeader">
+            <div class="brand">
+                <div class="brandIcon" aria-hidden="true">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        <path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        <path d="M8 16V11" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        <path d="M12 16V8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        <path d="M16 16V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div class="brandText">
+                    <div class="brandTitle">Sentiment Analyzer</div>
+                    <div class="brandSubtitle" id="subtitle">YouTube comments</div>
+                </div>
+            </div>
+
+            <button id="toggleTheme" class="themeBtn" type="button" title="Toggle theme" aria-label="Toggle theme">
+                <span id="themeIcon" class="themeIcon" aria-hidden="true"></span>
+            </button>
+        </div>
+
+        <button id="analyzeBtn" type="button" class="primaryBtn">
+            <span class="btnIcon" aria-hidden="true">
+                <svg class="icon icon--btn" viewBox="0 0 24 24" fill="none">
+                    <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="currentColor" />
+                </svg>
+            </span>
+            <span class="btnText">Analyze Comments</span>
+        </button>
+
+        <div id="loading" class="state hidden" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <div class="loadingStack">
+                <div class="loadingTitle">Analyzing...</div>
+                <div class="loadingHint" id="loadingHint">This may take a few seconds.</div>
+            </div>
+        </div>
+
+        <div id="error" class="state error hidden" role="alert"></div>
+
+        <div id="result" class="hidden">
+            <div class="summaryRow">
+                <div class="stat">
+                    <div class="statTop">
+                        <span class="statDot statDot--pos" aria-hidden="true"></span>
+                        <span class="statLabel">Positive</span>
+                    </div>
+                    <div class="statValue">
+                        <span id="posValue">0%</span>
+                    </div>
+                    <div class="statMeta"><span id="posCount">0</span> comments</div>
+                </div>
+
+                <div class="stat">
+                    <div class="statTop">
+                        <span class="statDot statDot--neg" aria-hidden="true"></span>
+                        <span class="statLabel">Negative</span>
+                    </div>
+                    <div class="statValue">
+                        <span id="negValue">0%</span>
+                    </div>
+                    <div class="statMeta"><span id="negCount">0</span> comments</div>
+                </div>
+
+                <div class="stat">
+                    <div class="statTop">
+                        <span class="statDot statDot--neu" aria-hidden="true"></span>
+                        <span class="statLabel">Neutral</span>
+                    </div>
+                    <div class="statValue">
+                        <span id="neuValue">0%</span>
+                    </div>
+                    <div class="statMeta"><span id="neuCount">0</span> comments</div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="chartWrap" id="chartWrap">
+                <canvas id="chart" class="chart hidden"></canvas>
+            </div>
+
+            <!-- Bars -->
+            <div class="bars">
+                <div class="barRow">
+                    <div class="barTop">
+                        <div class="barLabel">
+                            <span class="barDot barDot--pos" aria-hidden="true"></span>
+                            Positive
+                        </div>
+                        <div class="barValue">
+                            <span id="posPercent" class="percent">0%</span>
+                        </div>
+                    </div>
+                    <div class="progress" aria-hidden="true">
+                        <div id="posBar" class="barFill barFill--pos"></div>
+                    </div>
+                </div>
+
+                <div class="barRow">
+                    <div class="barTop">
+                        <div class="barLabel">
+                            <span class="barDot barDot--neg" aria-hidden="true"></span>
+                            Negative
+                        </div>
+                        <div class="barValue">
+                            <span id="negPercent" class="percent">0%</span>
+                        </div>
+                    </div>
+                    <div class="progress" aria-hidden="true">
+                        <div id="negBar" class="barFill barFill--neg"></div>
+                    </div>
+                </div>
+
+                <div class="barRow">
+                    <div class="barTop">
+                        <div class="barLabel">
+                            <span class="barDot barDot--neu" aria-hidden="true"></span>
+                            Neutral
+                        </div>
+                        <div class="barValue">
+                            <span id="neuPercent" class="percent">0%</span>
+                        </div>
+                    </div>
+                    <div class="progress" aria-hidden="true">
+                        <div id="neuBar" class="barFill barFill--neu"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Top Comments -->
+            <div id="topComments" class="section hidden">
+                <div class="sectionHeader">
+                    <h3>Comment Preview</h3>
+                    <div class="sectionHint" id="previewHint">Based on analyzed comments</div>
+                </div>
+                <ul id="commentsList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="popup.js"></script>
+
+</body>
+
+</html>

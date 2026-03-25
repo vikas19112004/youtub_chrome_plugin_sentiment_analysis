@@ -1,0 +1,4 @@
+flask
+vaderSentiment
+flask-cors
+mlflow
