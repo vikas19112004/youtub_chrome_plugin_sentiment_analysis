@@ -1,18 +1,28 @@
-function getComments() {
-    let comments = [];
+function getVideoId() {
+    const url = window.location.href;
 
-    document.querySelectorAll("#content-text").forEach((el) => {
-        comments.push(el.innerText);
-    });
+    // Case 1: Normal watch URL
+    const params = new URL(url).searchParams;
+    console.log("Params:", params);
+    if (params.get("v")) return params.get("v");
 
-    // return comments.slice(0, 20); // take first 20 comments
-    return comments
+    // Case 2: youtu.be short link
+    if (url.includes("youtu.be/")) {
+        console.log("Youtube be URL");
+        return url.split("youtu.be/")[1].split("?")[0];
+    }
+
+    // Case 3: Shorts
+    if (url.includes("/shorts/")) {
+        return url.split("/shorts/")[1].split("?")[0];
+    }
+
+    return null;
 }
 
-// Listen for message from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.type === "GET_COMMENTS") {
-        const comments = getComments();
-        sendResponse({ comments });
+    if (request.type === "GET_VIDEO_ID") {
+        const videoId = getVideoId();
+        sendResponse({ videoId });
     }
 });

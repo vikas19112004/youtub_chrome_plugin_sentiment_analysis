@@ -200,107 +200,118 @@ function renderTopComments(items) {
 
     if (previewHintEl) previewHintEl.textContent = "Based on analyzed comments";
     setHidden(topCommentsEl, false);
-  }
+}
 
 btn.addEventListener("click", async () => {
     btn.disabled = true;
     setHidden(errorEl, true);
-    if (loadingHint) loadingHint.textContent = "This may take a few seconds.";
+    if (loadingHint) loadingHint.textContent = "Fetching comments via YouTube API...";
     setHidden(loading, false);
     setHidden(resultCard, true);
     setHidden(chartWrap, true);
     setHidden(chartCanvas, true);
     setHidden(topCommentsEl, true);
 
-    // Reset bars for a cleaner animation.
     if (posBar) posBar.style.width = "0%";
     if (negBar) negBar.style.width = "0%";
     if (neuBar) neuBar.style.width = "0%";
 
     try {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!tab || !tab.id) throw new Error("No active tab found.");
 
-        chrome.tabs.sendMessage(tab.id, { type: "GET_COMMENTS" }, async (response) => {
-            if (chrome.runtime.lastError) {
+        chrome.tabs.sendMessage(tab.id, { type: "GET_VIDEO_ID" }, async (response) => {
+
+            if (!response || !response.videoId) {
                 setHidden(loading, true);
                 btn.disabled = false;
                 setHidden(errorEl, false);
-                errorEl.textContent = "Unable to read comments from this page.";
-                return;
-            }
-
-            const comments = response && Array.isArray(response.comments) ? response.comments : [];
-            if (!comments.length) {
-                setHidden(loading, true);
-                btn.disabled = false;
-                setHidden(errorEl, false);
-                errorEl.textContent = "No comments found on this page.";
+                errorEl.textContent = "Unable to detect YouTube video.";
                 return;
             }
 
             try {
+                // STEP 1: Fetch comments from backend (YouTube API)
+                const commentRes = await fetch("http://localhost:5000/get-comments", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ videoId: response.videoId })
+                });
+
+                const commentData = await commentRes.json();
+                const comments = commentData.comments || [];
+
+                if (!comments.length) {
+                    setHidden(loading, true);
+                    btn.disabled = false;
+                    setHidden(errorEl, false);
+                    errorEl.textContent = "No comments found via API.";
+                    return;
+                }
+
+                // STEP 2: Send comments for sentiment analysis
                 const res = await fetch("http://localhost:5000/analyze", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ comments })
                 });
 
-                if (!res.ok) throw new Error(`Backend error: ${res.status}`);
-
                 const data = await res.json();
 
                 let pos = 0, neg = 0, neu = 0;
-                (data || []).forEach((item) => {
-                    if (!item || !item.sentiment) return;
+
+                data.forEach(item => {
                     if (item.sentiment === "Positive") pos++;
                     else if (item.sentiment === "Negative") neg++;
                     else neu++;
                 });
 
-                const total = (data || []).length || 1; // avoid divide by zero
+                const total = data.length || 1;
+
                 const posPercent = +(pos / total * 100).toFixed(1);
                 const negPercent = +(neg / total * 100).toFixed(1);
                 const neuPercent = +(neu / total * 100).toFixed(1);
 
-                // Summary tiles.
-                if (posValueEl) posValueEl.textContent = `${posPercent}%`;
-                if (negValueEl) negValueEl.textContent = `${negPercent}%`;
-                if (neuValueEl) neuValueEl.textContent = `${neuPercent}%`;
-                if (posCountEl) posCountEl.textContent = String(pos);
-                if (negCountEl) negCountEl.textContent = String(neg);
-                if (neuCountEl) neuCountEl.textContent = String(neu);
+                // UI Updates
+                posValueEl.textContent = `${posPercent}%`;
+                negValueEl.textContent = `${negPercent}%`;
+                neuValueEl.textContent = `${neuPercent}%`;
 
-                // Bar labels.
-                if (posPercentEl) posPercentEl.textContent = `${posPercent}%`;
-                if (negPercentEl) negPercentEl.textContent = `${negPercent}%`;
-                if (neuPercentEl) neuPercentEl.textContent = `${neuPercent}%`;
+                posCountEl.textContent = pos;
+                negCountEl.textContent = neg;
+                neuCountEl.textContent = neu;
 
-                // Animated bars.
-                if (posBar) posBar.style.width = `${posPercent}%`;
-                if (negBar) negBar.style.width = `${negPercent}%`;
-                if (neuBar) neuBar.style.width = `${neuPercent}%`;
+                posPercentEl.textContent = `${posPercent}%`;
+                negPercentEl.textContent = `${negPercent}%`;
+                neuPercentEl.textContent = `${neuPercent}%`;
 
-                // Chart + results.
+                posBar.style.width = `${posPercent}%`;
+                negBar.style.width = `${negPercent}%`;
+                neuBar.style.width = `${neuPercent}%`;
+
                 renderChart(posPercent, negPercent, neuPercent);
-                renderTopComments(data || []);
+                renderTopComments(data);
 
-                if (subtitleEl) subtitleEl.textContent = `${total} comments analyzed`;
+                subtitleEl.textContent = `${total} comments analyzed`;
+
                 setHidden(loading, true);
-                setHidden(errorEl, true);
                 setHidden(resultCard, false);
                 btn.disabled = false;
+
             } catch (err) {
                 setHidden(loading, true);
                 btn.disabled = false;
                 setHidden(errorEl, false);
-                errorEl.textContent = "Backend not running (http://localhost:5000/analyze).";
+                errorEl.textContent = "Error fetching comments via API.";
             }
+
         });
+
     } catch (err) {
         setHidden(loading, true);
         btn.disabled = false;
         setHidden(errorEl, false);
-        errorEl.textContent = "Something went wrong while starting the analysis.";
+        errorEl.textContent = "Something went wrong.";
     }
 });
